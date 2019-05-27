@@ -58,8 +58,7 @@ class Trainer(object):
         #self.loss = Loss()
         self.criterion = Loss().to(self.device)
 
-        self.model = models.segmentation.deeplabv3_resnet50(pretrained=False,num_classes = 1) #the shoulder og Giant otherwise 
-                                                                       #you need contruct the model in model.deeplabv3
+        self.model = models.segmentation.deeplabv3_resnet50(pretrained=False,num_classes = 1) #the shoulder of the Giant
         self.model = self.model.to(self.device)
         
         #if self.gpu_ids is not None:
