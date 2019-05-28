@@ -8,6 +8,7 @@ import cv2
 import torchvision.models as models
 from tensorboardX import SummaryWriter
 from datasets_ex import get_loader
+from utils.utils import combine2tensor
 import time
 
 class Loss(nn.Module):
@@ -58,7 +59,8 @@ class Trainer(object):
         #self.loss = Loss()
         self.criterion = Loss().to(self.device)
 
-        self.model = models.segmentation.deeplabv3_resnet50(pretrained=False,num_classes = 1) #the shoulder of the Giant
+        self.model = models.segmentation.deeplabv3_resnet50(pretrained=False,num_classes = 1) #the shoulder og Giant otherwise 
+                                                                       #you need contruct the model in model.deeplabv3
         self.model = self.model.to(self.device)
         
         #if self.gpu_ids is not None:
@@ -137,11 +139,12 @@ class Trainer(object):
                 y[outputs['out'] < 0.5] = 0
                 show_pred = torch.cat((y, y, y),1)
                 show_gt = torch.cat((label_imgs, label_imgs, label_imgs),1)
-
+                show_result = combine2tensor(show_pred, show_gt)
+                #import pdb; pdb.set_trace()
                 self.writer.add_images(tag='images', 
                                        img_tensor=imgs, 
                                        global_step=global_step)
-                
+                '''
                 self.writer.add_images(tag = 'show_pred',
                                        img_tensor = show_pred,
                                        global_step = global_step)
@@ -149,7 +152,11 @@ class Trainer(object):
                 self.writer.add_images(tag = 'gt_img',
                                        img_tensor = show_gt,
                                        global_step = global_step)
-             
+                '''
+                self.writer.add_images(tag = 'result',
+                                        img_tensor = show_result,
+                                        global_step = global_step)
+                                                                
                 self.writer.add_scalar(tag='Lr',
                                        scalar_value=self.optimizer.param_groups[0]['lr'],
                                        global_step=global_step)
