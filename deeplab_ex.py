@@ -8,7 +8,7 @@ import cv2
 import torchvision.models as models
 from tensorboardX import SummaryWriter
 from datasets_ex import get_loader
-from utils.utils import combine2tensor
+from utils import combine2tensor, ConfusionMatrix
 import time
 
 class Loss(nn.Module):
@@ -93,7 +93,7 @@ class Trainer(object):
         self.label_root = '/home/liuyang/Documents/data/MSRA/labels'
         self.batch_size = 8
         self.img_size = 224 
-        self.dataset = get_loader(self.img_root, self.label_root, img_size = self.img_size, batch_size = self.batch_size)
+        self.dataset, self.dataset_test = get_loader(self.img_root, self.label_root, img_size = self.img_size, batch_size = self.batch_size)
         self.dataset_size = self.dataset.__len__()
     @staticmethod
     def adjust_learning_rate(optimizer, decay_rate=0.9):
@@ -103,7 +103,6 @@ class Trainer(object):
     
     
     def train(self):
-        self.model.train() # (set in training mode, this affects BatchNorm and dropout)
         for epoch in range(self.num_epochs):
             train_loss = 0
             if epoch in [100, 300, 500]:
@@ -114,6 +113,7 @@ class Trainer(object):
             print ("epoch: %d/%d" % (epoch+1, self.num_epochs))
 
             for batch_id, (imgs, label_imgs) in enumerate(self.dataset):
+                self.model.train() # (set in training mode, this affects BatchNorm and dropout)
                 global_step = batch_id + epoch * self.dataset_size
                 current_time = time.time()
 
@@ -144,15 +144,15 @@ class Trainer(object):
                 self.writer.add_images(tag='images', 
                                        img_tensor=imgs, 
                                        global_step=global_step)
-                '''
-                self.writer.add_images(tag = 'show_pred',
-                                       img_tensor = show_pred,
-                                       global_step = global_step)
                 
-                self.writer.add_images(tag = 'gt_img',
-                                       img_tensor = show_gt,
-                                       global_step = global_step)
-                '''
+                #self.writer.add_images(tag = 'show_pred',
+                #                       img_tensor = show_pred,
+                #                       global_step = global_step)
+                
+                #self.writer.add_images(tag = 'gt_img',
+                #                       img_tensor = show_gt,
+                #                       global_step = global_step)
+
                 self.writer.add_images(tag = 'result',
                                         img_tensor = show_result,
                                         global_step = global_step)
@@ -165,6 +165,22 @@ class Trainer(object):
                                         tag_scalar_dict={'Cls Loss': train_loss / (batch_id + 1)},
                                         global_step=global_step)
                 print('batch_id is %d'%(batch_id))
+            
+
+            #####Validation######
+            for batch_i, (img, label) in enumerate(self.dataset_test):           
+                self.model.eval() # (set in validation mode, this affects BatchNorm and dropout)
+                confmat = ConfusionMatrix(num_classes=2)
+                img =  torch.autograd.Variable(img).to(self.device) 
+                label =  torch.autograd.Variable(label).to(self.device) 
+                output = self.model(img) 
+
+                ####update the confusion matrix
+                confmat.update(label.flatten(), output['out'].argmax(1).flatten())
+                confmat.reduce_from_all_processes()
+                print(confmat.__str__())
+                print(confmat.mat)
+
             print("each epoch use time : %f"%(time.time() - current_time))
             print ("####")
 

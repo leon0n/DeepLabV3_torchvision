@@ -50,9 +50,15 @@ def get_loader(img_root, label_root, img_size, batch_size, mode='train', num_thr
             transforms.Lambda(lambda x: torch.round(x))  # TODO: it maybe unnecessary
         ])
         dataset = ImageData(img_root, label_root, transform, t_transform)
-        data_loader = data.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, num_workers=num_thread,
+        ##split the dataset to train/test  L -100和100的两个数据集
+        dataset, dataset_test = torch.utils.data.random_split(dataset, (dataset.__len__() -100, 100))
+
+        data_loader_train = data.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, num_workers=num_thread,
                                       pin_memory=pin)
-        return data_loader
+        data_loader_test = data.DataLoader(dataset=dataset_test, batch_size=batch_size, shuffle=False, num_workers=num_thread,
+                                      pin_memory=pin)
+                                      
+        return data_loader_train, data_loader_test
     else:
         t_transform = transforms.Compose([
             transforms.ToTensor(),
@@ -64,7 +70,13 @@ def get_loader(img_root, label_root, img_size, batch_size, mode='train', num_thr
 if __name__ == '__main__':      
     img_root = '/home/liuyang/Documents/data/MSRA/images'
     label_root = '/home/liuyang/Documents/data/MSRA/labels'
-    data_loader = get_loader(img_root, label_root, img_size = 224, batch_size = 8)
-    for  i , (img, label) in enumerate(data_loader):
+    data_loader, data_loader_test = get_loader(img_root, label_root, img_size = 224, batch_size = 8)
+    print(data_loader_test)
+    print(data_loader.__len__())
+    print(data_loader_test.__len__())
+    import pdb; pdb.set_trace()
+    for  i , (img, label) in enumerate(data_loader_test):
+        print(i)
+        print(data_loader_test)
         print(img.shape)
         print(label.shape)
