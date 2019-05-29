@@ -170,7 +170,7 @@ class Trainer(object):
             #####Validation######
             for batch_i, (img, label) in enumerate(self.dataset_test):           
                 self.model.eval() # (set in validation mode, this affects BatchNorm and dropout)
-                confmat = ConfusionMatrix(num_classes=2)
+                confmat = ConfusionMatrix(num_classes=3)
                 img =  torch.autograd.Variable(img).to(self.device) 
                 label =  torch.autograd.Variable(label).to(self.device) 
                 output = self.model(img) 
@@ -179,7 +179,6 @@ class Trainer(object):
                 confmat.update(label.flatten(), output['out'].argmax(1).flatten())
                 confmat.reduce_from_all_processes()
                 print(confmat.__str__())
-                print(confmat.mat)
 
             print("each epoch use time : %f"%(time.time() - current_time))
             print ("####")
